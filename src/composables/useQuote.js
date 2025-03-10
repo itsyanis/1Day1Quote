@@ -6,7 +6,9 @@ export function useQuote() {
   const currentAuthor = ref("");
   const currentImage = ref("");
   const currentBio = ref("");
-  const showAuthorInfo = ref(false); // État pour afficher/masquer les infos de l'auteur
+  const showAuthorInfo = ref(false); 
+  const likedQuotes = ref([]); 
+  const isLiked = ref(false); 
 
   // Cache pour les citations et les images
   const cachedQuotes = ref(
@@ -138,7 +140,27 @@ export function useQuote() {
       };
     }
   };
-  
+
+  // Fonction pour liker/déliker une citation
+  const toggleLike = () => {
+    if (isLiked.value) {
+      // Si la citation est déjà likée, on la retire des favoris
+      likedQuotes.value = likedQuotes.value.filter(
+        (quote) => quote.content !== currentQuote.value
+      );
+    } else {
+      // Sinon, on l'ajoute aux favoris
+      likedQuotes.value.push({
+        content: currentQuote.value,
+        author: currentAuthor.value,
+        image: currentImage.value,
+        bio: currentBio.value,
+      });
+    }
+    isLiked.value = !isLiked.value; // Inverse l'état du like
+    localStorage.setItem("likedQuotes", JSON.stringify(likedQuotes.value)); // Sauvegarde dans localStorage
+  };
+
   // Fonction pour afficher ou masquer les informations sur l'auteur
   const toggleAuthorInfo = () => {
     showAuthorInfo.value = !showAuthorInfo.value;
@@ -176,6 +198,13 @@ export function useQuote() {
     }
   });
 
+  // Au chargement de la page, récupère les citations likées depuis localStorage
+  onMounted(() => {
+    const savedLikedQuotes =
+      JSON.parse(localStorage.getItem("likedQuotes")) || [];
+    likedQuotes.value = savedLikedQuotes;
+  });
+
   return {
     currentQuote,
     currentAuthor,
@@ -184,5 +213,6 @@ export function useQuote() {
     showAuthorInfo,
     fetchQuote,
     toggleAuthorInfo,
+    toggleLike,
   };
 }
