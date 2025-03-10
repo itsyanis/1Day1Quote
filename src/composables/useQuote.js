@@ -21,7 +21,40 @@ export function useQuote() {
     if (typeof data.content !== "string" || typeof data.author !== "string") {
       throw new Error("Données de citation invalides.");
     }
+
+    // Vérifie l'absence de balises HTML ou de scripts
+    const htmlRegex = /<[^>]*>/;
+    if (htmlRegex.test(data.content) || htmlRegex.test(data.author)) {
+      throw new Error("Données de citation contiennent du HTML non autorisé.");
+    }
+
     return data;
+  };
+
+  const validateImageUrl = (url) => {
+    if (!url) return "/default-avatar.png";
+    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
+    const isSecure = url.startsWith("https://");
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      url.endsWith(ext)
+    );
+    return isSecure && hasValidExtension ? url : "/default-avatar.png";
+  };
+
+  const resizeImageUrl = (url, width = 200) => {
+    if (!url) return "/default-avatar.png";
+
+    // Regex pour correspondre aux URLs d'images de Wikipedia
+    const wikipediaImageRegex =
+      /\/commons\/thumb\/([a-f0-9]\/[a-f0-9]{2}\/)?([^\/]+)\/(\d+)px-([^\/]+)/;
+
+    if (wikipediaImageRegex.test(url)) {
+      // Redimensionne l'URL en remplaçant la largeur
+      return url.replace(/(\d+)px-/, `${width}px-`);
+    }
+
+    // Si l'URL ne correspond pas, retourne l'URL d'origine ou une image par défaut
+    return url;
   };
 
   // Fonction pour récupérer une citation depuis l'API ou le cache
@@ -84,11 +117,16 @@ export function useQuote() {
       const imageUrl = page.original
         ? page.original.source
         : "/default-avatar.png";
+
+      // Valide et redimensionne l'URL de l'image
+      const validatedImageUrl = validateImageUrl(imageUrl);
+      const resizedImageUrl = resizeImageUrl(validatedImageUrl, 200); // Redimensionne à 200px
+
       const bio = page.extract
         ? page.extract
         : "Aucune information biographique disponible.";
 
-      return { imageUrl, bio };
+      return { imageUrl: resizedImageUrl, bio };
     } catch (error) {
       console.error(
         "Erreur lors de la récupération des informations de l'auteur :",
@@ -100,7 +138,7 @@ export function useQuote() {
       };
     }
   };
-
+  
   // Fonction pour afficher ou masquer les informations sur l'auteur
   const toggleAuthorInfo = () => {
     showAuthorInfo.value = !showAuthorInfo.value;
