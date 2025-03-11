@@ -1,16 +1,14 @@
 import { ref, onMounted } from "vue";
 
 export function useQuote() {
-  // États réactifs
+  // States
   const currentQuote = ref("Chargement...");
   const currentAuthor = ref("");
   const currentImage = ref("");
   const currentBio = ref("");
-  const showAuthorInfo = ref(false); 
-  const likedQuotes = ref([]); 
-  const isLiked = ref(false); 
+  const showAuthorInfo = ref(false);
 
-  // Cache pour les citations et les images
+  // Cache for quotes and images
   const cachedQuotes = ref(
     JSON.parse(localStorage.getItem("cachedQuotes")) || []
   );
@@ -18,16 +16,15 @@ export function useQuote() {
     JSON.parse(localStorage.getItem("cachedImages")) || {}
   );
 
-  // Fonction pour valider les données de citation
   const validateQuoteData = (data) => {
     if (typeof data.content !== "string" || typeof data.author !== "string") {
-      throw new Error("Données de citation invalides.");
+      throw new Error("Invalid quote data.");
     }
 
-    // Vérifie l'absence de balises HTML ou de scripts
+    // Checks for absence of HTML tags or scripts
     const htmlRegex = /<[^>]*>/;
     if (htmlRegex.test(data.content) || htmlRegex.test(data.author)) {
-      throw new Error("Données de citation contiennent du HTML non autorisé.");
+      throw new Error("Quote data contains unauthorized HTML.");
     }
 
     return data;
@@ -51,27 +48,24 @@ export function useQuote() {
       /\/commons\/thumb\/([a-f0-9]\/[a-f0-9]{2}\/)?([^\/]+)\/(\d+)px-([^\/]+)/;
 
     if (wikipediaImageRegex.test(url)) {
-      // Redimensionne l'URL en remplaçant la largeur
+      // Resizes URL by replacing width
       return url.replace(/(\d+)px-/, `${width}px-`);
     }
 
-    // Si l'URL ne correspond pas, retourne l'URL d'origine ou une image par défaut
     return url;
   };
 
-  // Fonction pour récupérer une citation depuis l'API ou le cache
+  // Function to retrieve a quote from the API or cache
   const fetchQuote = async () => {
     try {
       let quoteData;
 
-      // Si des citations sont en cache, utilise-les
       if (cachedQuotes.value.length > 0) {
         quoteData = cachedQuotes.value.pop();
       } else {
-        // Sinon, fais un appel API
         const response = await fetch("https://api.quotable.io/random");
         const data = await response.json();
-        quoteData = validateQuoteData(data); // Valide les données
+        quoteData = validateQuoteData(data);
         cachedQuotes.value.push(quoteData);
         localStorage.setItem(
           "cachedQuotes",
@@ -82,20 +76,17 @@ export function useQuote() {
       currentQuote.value = quoteData.content;
       currentAuthor.value = quoteData.author;
 
-      // Récupère l'image et la biographie de l'auteur
       const { imageUrl, bio } = await fetchAuthorInfo(quoteData.author);
       currentImage.value = imageUrl;
       currentBio.value = bio;
 
-      // Ferme la section des informations sur l'auteur
-      showAuthorInfo.value = false; // Réinitialise l'état à false
+      showAuthorInfo.value = false;
     } catch (error) {
-      console.error("Erreur lors de la récupération de la citation :", error);
-      currentQuote.value =
-        "Impossible de charger la citation. Veuillez réessayer.";
+      console.error("Error while retrieving the quote:", error);
+      currentQuote.value = "Unable to load the quote. Please try again.";
       currentAuthor.value = "";
       currentImage.value = "/default-avatar.png";
-      currentBio.value = "Aucune information biographique disponible.";
+      currentBio.value = "No biographical information available.";
     }
   };
 
@@ -112,7 +103,7 @@ export function useQuote() {
 
       // Valide les données de la page
       if (!page || !page.title) {
-        throw new Error("Auteur non trouvé sur Wikipedia.");
+        throw new Error("Author not found on Wikipedia.");
       }
 
       // Récupère l'image et l'extrait
@@ -126,51 +117,27 @@ export function useQuote() {
 
       const bio = page.extract
         ? page.extract
-        : "Aucune information biographique disponible.";
+        : "No biographical information available.";
 
       return { imageUrl: resizedImageUrl, bio };
     } catch (error) {
-      console.error(
-        "Erreur lors de la récupération des informations de l'auteur :",
-        error
-      );
+      console.error("Error retrieving author information :", error);
       return {
         imageUrl: "/default-avatar.png",
-        bio: "Aucune information biographique disponible.",
+        bio: "No biographical information available.",
       };
     }
   };
 
-  // Fonction pour liker/déliker une citation
-  const toggleLike = () => {
-    if (isLiked.value) {
-      // Si la citation est déjà likée, on la retire des favoris
-      likedQuotes.value = likedQuotes.value.filter(
-        (quote) => quote.content !== currentQuote.value
-      );
-    } else {
-      // Sinon, on l'ajoute aux favoris
-      likedQuotes.value.push({
-        content: currentQuote.value,
-        author: currentAuthor.value,
-        image: currentImage.value,
-        bio: currentBio.value,
-      });
-    }
-    isLiked.value = !isLiked.value; // Inverse l'état du like
-    localStorage.setItem("likedQuotes", JSON.stringify(likedQuotes.value)); // Sauvegarde dans localStorage
-  };
-
-  // Fonction pour afficher ou masquer les informations sur l'auteur
   const toggleAuthorInfo = () => {
     showAuthorInfo.value = !showAuthorInfo.value;
   };
 
-  // Récupère une citation au chargement de la page et précharge des données
+  // Retrieves a quote on page load and preloads data
   onMounted(async () => {
     await fetchQuote(); // Charge la première citation
 
-    // Précharge 3 citations supplémentaires
+    // Preload 3 more quotes
     for (let i = 0; i < 3; i++) {
       try {
         const response = await fetch("https://api.quotable.io/random");
@@ -193,16 +160,9 @@ export function useQuote() {
           );
         }
       } catch (error) {
-        console.error("Erreur lors du préchargement des données :", error);
+        console.error("Error when preloading data :", error);
       }
     }
-  });
-
-  // Au chargement de la page, récupère les citations likées depuis localStorage
-  onMounted(() => {
-    const savedLikedQuotes =
-      JSON.parse(localStorage.getItem("likedQuotes")) || [];
-    likedQuotes.value = savedLikedQuotes;
   });
 
   return {
@@ -213,6 +173,5 @@ export function useQuote() {
     showAuthorInfo,
     fetchQuote,
     toggleAuthorInfo,
-    toggleLike,
   };
 }

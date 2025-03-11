@@ -1,12 +1,10 @@
 <template>
-    <footer class="p-2 bg-white/80 backdrop-blur-md shadow-lg">
-        <div class="container mx-auto text-center text-gray-600">
-            <p class="text-lg">Made by Developers, for Developers</p>
-            <p class="mt-1 text-sm">Quality resources shared by the community</p>
-        </div>
+    <footer class="p-6 bg-white border-t border-gray-100 text-center">
+        <p class="text-gray-600 mb-4 italic">
+            A simple quote can brighten a day ✨
+        </p>
+        <p class="text-gray-500 text-sm">
+            Made by : Y.M - {{ new Date().getFullYear() }}
+        </p>
     </footer>
 </template>
-
-<script setup>
-// Pas de logique nécessaire ici pour l'instant
-</script>
