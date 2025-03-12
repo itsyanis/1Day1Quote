@@ -16,7 +16,7 @@ export function useQuote() {
     JSON.parse(localStorage.getItem("cachedImages")) || {}
   );
 
-  // 🔍 Validate quote data
+  // Validate quote data
   const validateQuoteData = (data) => {
     if (typeof data.content !== "string" || typeof data.author !== "string") {
       throw new Error("Invalid quote data.");
@@ -43,7 +43,7 @@ export function useQuote() {
     return isSecure && hasValidExtension ? url : "/default-avatar.png";
   };
 
-  // 📏 Resize Wikipedia images dynamically
+  // Resize Wikipedia images dynamically
   const resizeImageUrl = (url, width = 200) => {
     if (!url) return "/default-avatar.png";
 
@@ -68,11 +68,6 @@ export function useQuote() {
         const response = await fetch("https://api.quotable.io/random");
         const data = await response.json();
         quoteData = validateQuoteData(data);
-        cachedQuotes.value.push(quoteData);
-        localStorage.setItem(
-          "cachedQuotes",
-          JSON.stringify(cachedQuotes.value)
-        );
       }
 
       currentQuote.value = quoteData.content;
@@ -83,6 +78,10 @@ export function useQuote() {
       currentBio.value = bio;
 
       showAuthorInfo.value = false;
+
+      if (cachedQuotes.value.length === 0) {
+        await preloadQuotes();
+      }
     } catch (error) {
       console.error("Error retrieving the quote:", error);
       currentQuote.value = "Unable to load the quote. Please try again.";
@@ -92,7 +91,7 @@ export function useQuote() {
     }
   };
 
-  //  Fetch author info & optimize images
+  // Fetch author info & optimize images
   const fetchAuthorInfo = async (author) => {
     try {
       const response = await fetch(
@@ -127,15 +126,8 @@ export function useQuote() {
     }
   };
 
-  const toggleAuthorInfo = () => {
-    showAuthorInfo.value = !showAuthorInfo.value;
-  };
-
-  // Load initial quote and preload more quotes asynchronously
-  onMounted(async () => {
-    await fetchQuote();
-
-    // Preload additional quotes asynchronously
+  // Preload quotes
+  const preloadQuotes = async () => {
     const preloadQuotes = [];
     for (let i = 0; i < 3; i++) {
       preloadQuotes.push(fetch("https://api.quotable.io/random"));
@@ -147,25 +139,30 @@ export function useQuote() {
         const data = await response.json();
         const quoteData = validateQuoteData(data);
         cachedQuotes.value.push(quoteData);
-        localStorage.setItem(
-          "cachedQuotes",
-          JSON.stringify(cachedQuotes.value)
-        );
 
         // Preload author images
         if (!cachedImages.value[quoteData.author]) {
           const { imageUrl } = await fetchAuthorInfo(quoteData.author);
           cachedImages.value[quoteData.author] =
             imageUrl || "/default-avatar.png";
-          localStorage.setItem(
-            "cachedImages",
-            JSON.stringify(cachedImages.value)
-          );
         }
       }
+
+      localStorage.setItem("cachedQuotes", JSON.stringify(cachedQuotes.value));
+      localStorage.setItem("cachedImages", JSON.stringify(cachedImages.value));
     } catch (error) {
       console.error("Error preloading quotes:", error);
     }
+  };
+
+  const toggleAuthorInfo = () => {
+    showAuthorInfo.value = !showAuthorInfo.value;
+  };
+
+  // Load initial quote and preload more quotes asynchronously
+  onMounted(async () => {
+    await fetchQuote();
+    await preloadQuotes();
   });
 
   return {
