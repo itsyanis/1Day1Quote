@@ -70,9 +70,16 @@ export function useQuote() {
           headers: {
             "Content-Type": "application/json",
           },
+          mode: "cors",
         });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok.");
+        }
+
+        // Cloner les données pour éviter les problèmes cross-origin
         const data = await response.json();
-        quoteData = validateQuoteData(data);
+        quoteData = validateQuoteData(JSON.parse(JSON.stringify(data))); // Cloner l'objet
       }
 
       currentQuote.value = quoteData.content;
@@ -109,10 +116,19 @@ export function useQuote() {
             "Content-Type": "application/json",
             Origin: window.location.origin,
           },
+          mode: "cors",
         }
       );
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok.");
+      }
+
+      // Cloner les données pour éviter les problèmes cross-origin
       const data = await response.json();
-      const page = data.query.pages[0];
+      const clonedData = JSON.parse(JSON.stringify(data)); // Cloner l'objet
+
+      const page = clonedData.query.pages[0];
 
       if (!page || !page.title) {
         throw new Error("Author not found on Wikipedia.");
@@ -148,8 +164,13 @@ export function useQuote() {
     try {
       const responses = await Promise.all(preloadQuotes);
       for (const response of responses) {
+        if (!response.ok) {
+          throw new Error("Network response was not ok.");
+        }
+
+        // Cloner les données pour éviter les problèmes cross-origin
         const data = await response.json();
-        const quoteData = validateQuoteData(data);
+        const quoteData = validateQuoteData(JSON.parse(JSON.stringify(data))); // Cloner l'objet
         cachedQuotes.value.push(quoteData);
 
         // Preload author images
