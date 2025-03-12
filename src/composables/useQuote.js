@@ -31,7 +31,7 @@ export function useQuote() {
     return data;
   };
 
-  // 🖼️ Validate and secure image URLs
+  // Validate and secure image URLs
   const validateImageUrl = (url) => {
     if (!url) return "/default-avatar.png";
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
@@ -57,7 +57,7 @@ export function useQuote() {
     return url;
   };
 
-  // 📥 Fetch and cache quotes
+  // Fetch and cache quotes
   const fetchQuote = async () => {
     try {
       let quoteData;
@@ -92,7 +92,7 @@ export function useQuote() {
     }
   };
 
-  // 🔎 Fetch author info & optimize images
+  //  Fetch author info & optimize images
   const fetchAuthorInfo = async (author) => {
     try {
       const response = await fetch(
@@ -131,7 +131,7 @@ export function useQuote() {
     showAuthorInfo.value = !showAuthorInfo.value;
   };
 
-  // 🚀 Load initial quote and preload more quotes asynchronously
+  // Load initial quote and preload more quotes asynchronously
   onMounted(async () => {
     await fetchQuote();
 
