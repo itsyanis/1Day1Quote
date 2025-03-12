@@ -95,10 +95,6 @@ export function useQuote() {
   // 🔎 Fetch author info & optimize images
   const fetchAuthorInfo = async (author) => {
     try {
-      if (cachedImages.value[author]) {
-        return { imageUrl: cachedImages.value[author], bio: "Cached data" };
-      }
-
       const response = await fetch(
         `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=pageimages|pageterms|extracts&piprop=original&exintro=true&explaintext=true&titles=${encodeURIComponent(
           author
