@@ -9,8 +9,9 @@
         <!-- Author image -->
         <div class="flex justify-center mb-6">
             <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-sm">
-                <img :src="currentImage" alt="Auteur de la citation" class="w-full h-full object-cover"
-                    v-if="currentImage" />
+                <img :src="currentImage" alt="Auteur de la citation"
+                    class="w-full h-full object-cover transition-opacity ease-in-out" loading="lazy" v-if="currentImage"
+                    @error="(e) => e.target.src = '/default-avatar.png'" />
                 <div v-else class="w-full h-full bg-gray-200 animate-pulse"></div>
             </div>
         </div>

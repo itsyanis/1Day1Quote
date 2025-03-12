@@ -2,7 +2,7 @@ import { ref, onMounted } from "vue";
 
 export function useQuote() {
   // States
-  const currentQuote = ref("Chargement...");
+  const currentQuote = ref("Loading...");
   const currentAuthor = ref("");
   const currentImage = ref("");
   const currentBio = ref("");
@@ -16,20 +16,22 @@ export function useQuote() {
     JSON.parse(localStorage.getItem("cachedImages")) || {}
   );
 
+  // 🔍 Validate quote data
   const validateQuoteData = (data) => {
     if (typeof data.content !== "string" || typeof data.author !== "string") {
       throw new Error("Invalid quote data.");
     }
 
-    // Checks for absence of HTML tags or scripts
+    // Prevents XSS injection via HTML
     const htmlRegex = /<[^>]*>/;
     if (htmlRegex.test(data.content) || htmlRegex.test(data.author)) {
-      throw new Error("Quote data contains unauthorized HTML.");
+      throw new Error("Quote contains unauthorized HTML.");
     }
 
     return data;
   };
 
+  // 🖼️ Validate and secure image URLs
   const validateImageUrl = (url) => {
     if (!url) return "/default-avatar.png";
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
@@ -37,25 +39,25 @@ export function useQuote() {
     const hasValidExtension = allowedExtensions.some((ext) =>
       url.endsWith(ext)
     );
+
     return isSecure && hasValidExtension ? url : "/default-avatar.png";
   };
 
+  // 📏 Resize Wikipedia images dynamically
   const resizeImageUrl = (url, width = 200) => {
     if (!url) return "/default-avatar.png";
 
-    // Regex pour correspondre aux URLs d'images de Wikipedia
     const wikipediaImageRegex =
       /\/commons\/thumb\/([a-f0-9]\/[a-f0-9]{2}\/)?([^\/]+)\/(\d+)px-([^\/]+)/;
 
     if (wikipediaImageRegex.test(url)) {
-      // Resizes URL by replacing width
       return url.replace(/(\d+)px-/, `${width}px-`);
     }
 
     return url;
   };
 
-  // Function to retrieve a quote from the API or cache
+  // 📥 Fetch and cache quotes
   const fetchQuote = async () => {
     try {
       let quoteData;
@@ -82,7 +84,7 @@ export function useQuote() {
 
       showAuthorInfo.value = false;
     } catch (error) {
-      console.error("Error while retrieving the quote:", error);
+      console.error("Error retrieving the quote:", error);
       currentQuote.value = "Unable to load the quote. Please try again.";
       currentAuthor.value = "";
       currentImage.value = "/default-avatar.png";
@@ -90,9 +92,13 @@ export function useQuote() {
     }
   };
 
-  // Fonction pour récupérer l'image et la biographie de l'auteur
+  // 🔎 Fetch author info & optimize images
   const fetchAuthorInfo = async (author) => {
     try {
+      if (cachedImages.value[author]) {
+        return { imageUrl: cachedImages.value[author], bio: "Cached data" };
+      }
+
       const response = await fetch(
         `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=pageimages|pageterms|extracts&piprop=original&exintro=true&explaintext=true&titles=${encodeURIComponent(
           author
@@ -101,27 +107,23 @@ export function useQuote() {
       const data = await response.json();
       const page = data.query.pages[0];
 
-      // Valide les données de la page
       if (!page || !page.title) {
         throw new Error("Author not found on Wikipedia.");
       }
 
-      // Récupère l'image et l'extrait
       const imageUrl = page.original
         ? page.original.source
         : "/default-avatar.png";
-
-      // Valide et redimensionne l'URL de l'image
       const validatedImageUrl = validateImageUrl(imageUrl);
-      const resizedImageUrl = resizeImageUrl(validatedImageUrl, 200); // Redimensionne à 200px
+      const resizedImageUrl = resizeImageUrl(validatedImageUrl, 200);
 
-      const bio = page.extract
-        ? page.extract
-        : "No biographical information available.";
+      cachedImages.value[author] = resizedImageUrl;
+      localStorage.setItem("cachedImages", JSON.stringify(cachedImages.value));
 
+      const bio = page.extract || "No biographical information available.";
       return { imageUrl: resizedImageUrl, bio };
     } catch (error) {
-      console.error("Error retrieving author information :", error);
+      console.error("Error retrieving author information:", error);
       return {
         imageUrl: "/default-avatar.png",
         bio: "No biographical information available.",
@@ -133,23 +135,28 @@ export function useQuote() {
     showAuthorInfo.value = !showAuthorInfo.value;
   };
 
-  // Retrieves a quote on page load and preloads data
+  // 🚀 Load initial quote and preload more quotes asynchronously
   onMounted(async () => {
-    await fetchQuote(); // Charge la première citation
+    await fetchQuote();
 
-    // Preload 3 more quotes
+    // Preload additional quotes asynchronously
+    const preloadQuotes = [];
     for (let i = 0; i < 3; i++) {
-      try {
-        const response = await fetch("https://api.quotable.io/random");
+      preloadQuotes.push(fetch("https://api.quotable.io/random"));
+    }
+
+    try {
+      const responses = await Promise.all(preloadQuotes);
+      for (const response of responses) {
         const data = await response.json();
-        const quoteData = validateQuoteData(data); // Valide les données
+        const quoteData = validateQuoteData(data);
         cachedQuotes.value.push(quoteData);
         localStorage.setItem(
           "cachedQuotes",
           JSON.stringify(cachedQuotes.value)
         );
 
-        // Précharge l'image de l'auteur
+        // Preload author images
         if (!cachedImages.value[quoteData.author]) {
           const { imageUrl } = await fetchAuthorInfo(quoteData.author);
           cachedImages.value[quoteData.author] =
@@ -159,9 +166,9 @@ export function useQuote() {
             JSON.stringify(cachedImages.value)
           );
         }
-      } catch (error) {
-        console.error("Error when preloading data :", error);
       }
+    } catch (error) {
+      console.error("Error preloading quotes:", error);
     }
   });
 
