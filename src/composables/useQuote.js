@@ -65,7 +65,12 @@ export function useQuote() {
       if (cachedQuotes.value.length > 0) {
         quoteData = cachedQuotes.value.pop();
       } else {
-        const response = await fetch("https://api.quotable.io/random");
+        const response = await fetch("https://api.quotable.io/random", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
         const data = await response.json();
         quoteData = validateQuoteData(data);
       }
@@ -97,7 +102,14 @@ export function useQuote() {
       const response = await fetch(
         `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=pageimages|pageterms|extracts&piprop=original&exintro=true&explaintext=true&titles=${encodeURIComponent(
           author
-        )}&origin=*`
+        )}&origin=*`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: window.location.origin,
+          },
+        }
       );
       const data = await response.json();
       const page = data.query.pages[0];
