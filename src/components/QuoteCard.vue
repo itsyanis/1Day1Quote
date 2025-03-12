@@ -43,7 +43,10 @@
 </template>
 
 <script setup>
-defineProps({
+import { useHead } from '@vueuse/head';
+import { computed } from 'vue';
+
+const props = defineProps({
     currentQuote: String,
     currentAuthor: String,
     currentImage: String,
@@ -61,7 +64,58 @@ const toggleAuthorInfo = () => {
     emit('toggle-author-info');
 };
 
+// ✅ Dynamic SEO: Updating title and description based on quote & author
+useHead(computed(() => ({
+    title: props.currentAuthor
+        ? `1Day1Quote - Quote by ${props.currentAuthor}`
+        : "1Day1Quote - Inspiring Quote of the Day",
+    meta: [
+        {
+            name: "description",
+            content: props.currentQuote
+                ? `"${props.currentQuote}" - ${props.currentAuthor}`
+                : "Discover a new inspiring quote every day."
+        },
+        // Open Graph (for Facebook, LinkedIn sharing)
+        {
+            property: "og:title", content: props.currentAuthor
+                ? `Quote by ${props.currentAuthor} - 1Day1Quote`
+                : "1Day1Quote - Inspiring Quotes"
+        },
+        {
+            property: "og:description", content: props.currentQuote
+                ? `"${props.currentQuote}" - ${props.currentAuthor}`
+                : "Find daily inspiration with a new quote."
+        },
+        { property: "og:image", content: props.currentImage || "/default-image.jpg" },
+        { property: "og:type", content: "website" },
+
+        // Twitter Card (for Twitter sharing)
+        { name: "twitter:card", content: "summary_large_image" },
+        {
+            name: "twitter:title", content: props.currentAuthor
+                ? `Quote by ${props.currentAuthor} - 1Day1Quote`
+                : "1Day1Quote - Inspiring Quotes"
+        },
+        {
+            name: "twitter:description", content: props.currentQuote
+                ? `"${props.currentQuote}" - ${props.currentAuthor}`
+                : "Get inspired with a new quote every day."
+        },
+        { name: "twitter:image", content: props.currentImage || "/default-image.jpg" }
+    ]
+})));
 </script>
+
+<style scoped>
+blockquote p,
+p,
+button,
+div {
+    font-family: 'Neuton', serif;
+}
+</style>
+
 
 <style scoped>
 blockquote p,
