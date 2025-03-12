@@ -1,97 +1,92 @@
 import { ref, onMounted } from "vue";
 
 export function useQuote() {
-  // States
+  // State variables
   const currentQuote = ref("Loading...");
   const currentAuthor = ref("");
   const currentImage = ref("");
   const currentBio = ref("");
   const showAuthorInfo = ref(false);
 
-  // Cache for quotes and images
+  // Caching for quotes and author images
   const cachedQuotes = ref(
     JSON.parse(localStorage.getItem("cachedQuotes")) || []
   );
   const cachedImages = ref(
     JSON.parse(localStorage.getItem("cachedImages")) || {}
   );
+  const cachedAuthors = ref(
+    JSON.parse(localStorage.getItem("cachedAuthors")) || {}
+  );
 
-  // Validate quote data
+  // API Key (loaded from environment variables)
+  const API_KEY = import.meta.env.VITE_API_KEY;
+  const QUOTE_API_URL = "https://api.api-ninjas.com/v1/quotes";
+  const MIN_CACHE_SIZE = 3; // Minimum cache size before preloading new quotes
+
+  // Function to validate the quote data before using it
   const validateQuoteData = (data) => {
-    if (typeof data.content !== "string" || typeof data.author !== "string") {
+    if (typeof data.quote !== "string" || typeof data.author !== "string") {
       throw new Error("Invalid quote data.");
     }
 
     // Prevents XSS injection via HTML
     const htmlRegex = /<[^>]*>/;
-    if (htmlRegex.test(data.content) || htmlRegex.test(data.author)) {
+    if (htmlRegex.test(data.quote) || htmlRegex.test(data.author)) {
       throw new Error("Quote contains unauthorized HTML.");
     }
 
     return data;
   };
 
-  // Validate and secure image URLs
+  // Function to validate image URLs and prevent invalid or insecure sources
   const validateImageUrl = (url) => {
     if (!url) return "/default-avatar.png";
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
-    const isSecure = url.startsWith("https://");
-    const hasValidExtension = allowedExtensions.some((ext) =>
-      url.endsWith(ext)
-    );
-
-    return isSecure && hasValidExtension ? url : "/default-avatar.png";
+    return url.startsWith("https://") &&
+      allowedExtensions.some((ext) => url.endsWith(ext))
+      ? url
+      : "/default-avatar.png";
   };
 
-  // Resize Wikipedia images dynamically
+  // Dynamically resizes Wikipedia images if applicable
   const resizeImageUrl = (url, width = 200) => {
-    if (!url) return "/default-avatar.png";
-
-    const wikipediaImageRegex =
-      /\/commons\/thumb\/([a-f0-9]\/[a-f0-9]{2}\/)?([^\/]+)\/(\d+)px-([^\/]+)/;
-
-    if (wikipediaImageRegex.test(url)) {
-      return url.replace(/(\d+)px-/, `${width}px-`);
-    }
-
-    return url;
+    return url?.replace(/(\d+)px-/, `${width}px-`) || "/default-avatar.png";
   };
 
-  // Fetch and cache quotes
+  // Fetches a new quote from API or cache
   const fetchQuote = async () => {
     try {
       let quoteData;
 
+      // If quotes are available in cache, use them first
       if (cachedQuotes.value.length > 0) {
         quoteData = cachedQuotes.value.pop();
       } else {
-        const response = await fetch("https://api.quotable.io/random", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          mode: "cors",
+        // Otherwise, fetch a new quote from the API
+        const response = await fetch(QUOTE_API_URL, {
+          headers: { "X-Api-Key": API_KEY },
         });
 
-        if (!response.ok) {
-          throw new Error("Network response was not ok.");
-        }
+        if (!response.ok) throw new Error("Network response was not ok.");
 
-        // Cloner les données pour éviter les problèmes cross-origin
         const data = await response.json();
-        quoteData = validateQuoteData(JSON.parse(JSON.stringify(data))); // Cloner l'objet
+        quoteData = validateQuoteData(data[0]);
       }
 
-      currentQuote.value = quoteData.content;
+      // Update the UI with the new quote
+      currentQuote.value = quoteData.quote;
       currentAuthor.value = quoteData.author;
 
+      // Fetch author information (with caching)
       const { imageUrl, bio } = await fetchAuthorInfo(quoteData.author);
       currentImage.value = imageUrl;
       currentBio.value = bio;
 
       showAuthorInfo.value = false;
 
-      if (cachedQuotes.value.length === 0) {
+      // If cache is low, preload additional quotes
+      if (cachedQuotes.value.length < MIN_CACHE_SIZE) {
         await preloadQuotes();
       }
     } catch (error) {
@@ -103,8 +98,13 @@ export function useQuote() {
     }
   };
 
-  // Fetch author info & optimize images
+  // Fetches author information from Wikipedia API with caching
   const fetchAuthorInfo = async (author) => {
+    // Check if author info is already cached
+    if (cachedAuthors.value[author]) {
+      return cachedAuthors.value[author];
+    }
+
     try {
       const response = await fetch(
         `https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=pageimages|pageterms|extracts&piprop=original&exintro=true&explaintext=true&titles=${encodeURIComponent(
@@ -112,38 +112,33 @@ export function useQuote() {
         )}&origin=*`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Origin: window.location.origin,
-          },
+          headers: { "Content-Type": "application/json" },
           mode: "cors",
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok.");
-      }
+      if (!response.ok) throw new Error("Network response was not ok.");
 
-      // Cloner les données pour éviter les problèmes cross-origin
       const data = await response.json();
-      const clonedData = JSON.parse(JSON.stringify(data)); // Cloner l'objet
+      const page = data.query.pages[0];
 
-      const page = clonedData.query.pages[0];
-
-      if (!page || !page.title) {
+      if (!page || !page.title)
         throw new Error("Author not found on Wikipedia.");
-      }
 
       const imageUrl = page.original
         ? page.original.source
         : "/default-avatar.png";
       const validatedImageUrl = validateImageUrl(imageUrl);
       const resizedImageUrl = resizeImageUrl(validatedImageUrl, 200);
-
-      cachedImages.value[author] = resizedImageUrl;
-      localStorage.setItem("cachedImages", JSON.stringify(cachedImages.value));
-
       const bio = page.extract || "No biographical information available.";
+
+      // Store author info in cache and localStorage
+      cachedAuthors.value[author] = { imageUrl: resizedImageUrl, bio };
+      localStorage.setItem(
+        "cachedAuthors",
+        JSON.stringify(cachedAuthors.value)
+      );
+
       return { imageUrl: resizedImageUrl, bio };
     } catch (error) {
       console.error("Error retrieving author information:", error);
@@ -154,48 +149,46 @@ export function useQuote() {
     }
   };
 
-  // Preload quotes
+  // Preloads a batch of quotes to reduce API calls
   const preloadQuotes = async () => {
-    const preloadQuotes = [];
-    for (let i = 0; i < 3; i++) {
-      preloadQuotes.push(fetch("https://api.quotable.io/random"));
-    }
+    const missingCount = MIN_CACHE_SIZE - cachedQuotes.value.length;
+    if (missingCount <= 0) return;
 
     try {
-      const responses = await Promise.all(preloadQuotes);
+      const responses = await Promise.all(
+        Array.from({ length: missingCount }, () =>
+          fetch(QUOTE_API_URL, { headers: { "X-Api-Key": API_KEY } })
+        )
+      );
+
       for (const response of responses) {
-        if (!response.ok) {
-          throw new Error("Network response was not ok.");
-        }
+        if (!response.ok) throw new Error("Network response was not ok.");
 
-        // Cloner les données pour éviter les problèmes cross-origin
         const data = await response.json();
-        const quoteData = validateQuoteData(JSON.parse(JSON.stringify(data))); // Cloner l'objet
-        cachedQuotes.value.push(quoteData);
+        const quoteData = validateQuoteData(data[0]);
 
-        // Preload author images
-        if (!cachedImages.value[quoteData.author]) {
-          const { imageUrl } = await fetchAuthorInfo(quoteData.author);
-          cachedImages.value[quoteData.author] =
-            imageUrl || "/default-avatar.png";
+        // Prevent duplicate quotes in the cache
+        if (!cachedQuotes.value.find((q) => q.quote === quoteData.quote)) {
+          cachedQuotes.value.push(quoteData);
         }
       }
 
+      // Save cached quotes to local storage
       localStorage.setItem("cachedQuotes", JSON.stringify(cachedQuotes.value));
-      localStorage.setItem("cachedImages", JSON.stringify(cachedImages.value));
     } catch (error) {
       console.error("Error preloading quotes:", error);
     }
   };
 
+  // Toggles the visibility of author information
   const toggleAuthorInfo = () => {
     showAuthorInfo.value = !showAuthorInfo.value;
   };
 
-  // Load initial quote and preload more quotes asynchronously
+  // Load initial quote and preload additional quotes on component mount
   onMounted(async () => {
-    await fetchQuote();
-    await preloadQuotes();
+    await fetchQuote(); // Load the first quote
+    await preloadQuotes(); // Preload additional quotes
   });
 
   return {
