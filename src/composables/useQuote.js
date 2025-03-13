@@ -151,12 +151,12 @@ export function useQuote() {
 
   // Preloads a batch of quotes to reduce API calls
   const preloadQuotes = async () => {
-    const missingCount = MIN_CACHE_SIZE - cachedQuotes.value.length;
-    if (missingCount <= 0) return;
+    if (cachedQuotes.value.length >= 2) return;
 
     try {
+      const batchSize = 3;
       const responses = await Promise.all(
-        Array.from({ length: missingCount }, () =>
+        Array.from({ length: batchSize }, () =>
           fetch(QUOTE_API_URL, { headers: { "X-Api-Key": API_KEY } })
         )
       );
@@ -167,13 +167,13 @@ export function useQuote() {
         const data = await response.json();
         const quoteData = validateQuoteData(data[0]);
 
-        // Prevent duplicate quotes in the cache
+        // check we don't add duplicate
         if (!cachedQuotes.value.find((q) => q.quote === quoteData.quote)) {
           cachedQuotes.value.push(quoteData);
         }
       }
 
-      // Save cached quotes to local storage
+      // Save
       localStorage.setItem("cachedQuotes", JSON.stringify(cachedQuotes.value));
     } catch (error) {
       console.error("Error preloading quotes:", error);
