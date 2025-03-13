@@ -51,7 +51,8 @@
 
 ## How It Works
 
-The app fetches random quotes from the [Quotable.io](https://api.quotable.io) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
+The app fetches random quotes from the [API Ninjas]([https://api.quotable.io](https://www.api-ninjas.com/)) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
+
 
 ## Data Validation and Security
 
