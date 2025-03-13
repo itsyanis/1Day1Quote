@@ -1,6 +1,6 @@
 # 1Day1Quote
 
-1Day1Quote is a personal project designed to display a random quote each day. The user can see the quote of the day, the author, and a brief biography of the author. Additionally, the user can generate a new quote as many times as they want. This project is developed using Vue.js, Tailwind CSS.
+[1Day1Quote](https://1-day1-quote.vercel.app/) is a personal project designed to display a random quote each day. The user can see the quote of the day, the author, and a brief biography. Additionally, the user can generate a new quote as many times as they want.
 
 <p align="center">
   <img width="521" alt="Image" src="https://github.com/user-attachments/assets/732ac1a0-e342-4485-be55-3499163963ea" />
@@ -64,5 +64,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Authors
 
-- **Yanis.M**: Creator and main developer.
+- **Yanis.M**: Creator and main developer of [1Day1Quote](https://1-day1-quote.vercel.app/).
 
