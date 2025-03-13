@@ -1,6 +1,6 @@
 # 1Day1Quote
 
-1Day1Quote is a personal project designed to display a random quote each day. The user can see the quote of the day, the author, and a brief biography of the author. Additionally, the user can generate a new quote as many times as they want. This project is developed using Vue.js, Tailwind CSS.
+[1Day1Quote](https://1-day1-quote.vercel.app/) is a personal project designed to display a random quote each day. The user can see the quote of the day, the author, and a brief biography. Additionally, the user can generate a new quote as many times as they want.
 
 <p align="center">
   <img width="521" alt="Image" src="https://github.com/user-attachments/assets/732ac1a0-e342-4485-be55-3499163963ea" />
@@ -51,7 +51,8 @@
 
 ## How It Works
 
-The app fetches random quotes from the [Quotable.io](https://api.quotable.io) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
+The app fetches random quotes from the [API Ninjas]([https://api.quotable.io](https://www.api-ninjas.com/)) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
+
 
 ## Data Validation and Security
 
@@ -63,5 +64,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Authors
 
-- **Yanis.M**: Creator and main developer.
+- **Yanis.M**: Creator and main developer of [1Day1Quote](https://1-day1-quote.vercel.app/).
 
