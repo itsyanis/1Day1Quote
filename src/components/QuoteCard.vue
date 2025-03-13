@@ -31,7 +31,7 @@
 
         <!--Generate new Quote -->
         <button @click="fetchQuote"
-            class="mt-6 bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+            class="mt-6 bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 transition duration-300 ">
             New quote
         </button>
 
