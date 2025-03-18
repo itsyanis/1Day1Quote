@@ -1,7 +1,7 @@
 <template>
     <div class="text-center bg-white rounded-xl shadow-lg p-8 max-w-lg w-full relative border border-gray-100">
         <!-- Information button -->
-        <button @click="toggleAuthorInfo" class="absolute top-4 right-4 p-2  " title="Informations sur l'auteur">
+        <button @click="toggleAuthorInfo" class="absolute top-4 right-4 p-2  " title="Author information">
             ℹ️
         </button>
 
@@ -36,16 +36,14 @@
         </button>
 
         <!-- Author's information -->
-        <div v-if="showAuthorInfo" class="mt-4 p-4 bg-gray-50 rounded-lg text-left max-h-48 overflow-y-auto">
-            <p class="text-base font-semibold text-gray-800">About the author:</p>
-            <p class="text-gray-700 mt-1 text-sm">{{ currentBio }}</p>
-        </div>
+        <AuthorInfo v-if="showAuthorInfo" :bio="currentBio" />
+
     </div>
 </template>
 
 <script setup>
-import { useHead } from '@vueuse/head';
-import { computed } from 'vue';
+import { useSEOMetaTags } from "../composables/seoService";
+import AuthorInfo from "./AuthorInfo.vue";
 
 const props = defineProps({
     currentQuote: String,
@@ -65,47 +63,12 @@ const toggleAuthorInfo = () => {
     emit('toggle-author-info');
 };
 
-// ✅ Dynamic SEO: Updating title and description based on quote & author
-useHead(computed(() => ({
-    title: props.currentAuthor
-        ? `1Day1Quote - Quote by ${props.currentAuthor}`
-        : "1Day1Quote - Inspiring Quote of the Day",
-    meta: [
-        {
-            name: "description",
-            content: props.currentQuote
-                ? `"${props.currentQuote}" - ${props.currentAuthor}`
-                : "Discover a new inspiring quote every day."
-        },
-        // Open Graph (for Facebook, LinkedIn sharing)
-        {
-            property: "og:title", content: props.currentAuthor
-                ? `Quote by ${props.currentAuthor} - 1Day1Quote`
-                : "1Day1Quote - Inspiring Quotes"
-        },
-        {
-            property: "og:description", content: props.currentQuote
-                ? `"${props.currentQuote}" - ${props.currentAuthor}`
-                : "Find daily inspiration with a new quote."
-        },
-        { property: "og:image", content: props.currentImage || "/default-image.jpg" },
-        { property: "og:type", content: "website" },
-
-        // Twitter Card (for Twitter sharing)
-        { name: "twitter:card", content: "summary_large_image" },
-        {
-            name: "twitter:title", content: props.currentAuthor
-                ? `Quote by ${props.currentAuthor} - 1Day1Quote`
-                : "1Day1Quote - Inspiring Quotes"
-        },
-        {
-            name: "twitter:description", content: props.currentQuote
-                ? `"${props.currentQuote}" - ${props.currentAuthor}`
-                : "Get inspired with a new quote every day."
-        },
-        { name: "twitter:image", content: props.currentImage || "/default-image.jpg" }
-    ]
-})));
+useSEOMetaTags(
+    props.currentAuthor ? `1Day1Quote - Quote by ${props.currentAuthor}` : "1Day1Quote - Inspiring Quote of the Day",
+    props.currentQuote ? `"${props.currentQuote}" - ${props.currentAuthor}` : "Discover a new inspiring quote every day.",
+    props.currentImage || "/default-image.jpg",
+    'en'
+);
 </script>
 
 <style scoped>
