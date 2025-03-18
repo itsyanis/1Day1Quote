@@ -79,13 +79,3 @@ div {
     font-family: 'Neuton', serif;
 }
 </style>
-
-
-<style scoped>
-blockquote p,
-p,
-button,
-div {
-    font-family: 'Neuton', serif;
-}
-</style>
