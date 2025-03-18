@@ -26,7 +26,7 @@
 1. Clone this repository to your local machine:
 
     ```bash
-    git clone [https://github.com/your-username/1Day1Quote.git](https://github.com/itsyanis/1Day1Quote.git)
+    git clone https://github.com/itsyanis/1Day1Quote.git
     ```
 
 2. Navigate to the project directory:
@@ -51,7 +51,7 @@
 
 ## How It Works
 
-The app fetches random quotes from the [API Ninjas]([https://api.quotable.io](https://www.api-ninjas.com/)) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
+The app fetches random quotes from the [API Ninjas](https://www.api-ninjas.com/) API and author information from the [Wikipedia](https://en.wikipedia.org/w/api.php) API. Each quote is cached to speed up future loads. Author information can be toggled on or off based on user preference.
 
 
 ## Data Validation and Security
